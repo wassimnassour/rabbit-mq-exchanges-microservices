@@ -1,0 +1,9 @@
+{
+  "devDependencies": {
+    "@types/node": "^22.5.3",
+    "@types/amqplib": "^0.10.5",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  }
+}
