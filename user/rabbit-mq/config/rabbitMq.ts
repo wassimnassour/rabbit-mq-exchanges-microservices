@@ -135,25 +135,66 @@ async function consumeMessages(
   )
 }
 
+const queues = [
+  {
+    queueName: "order.created",
+    bindings: [
+      {
+        exchangeKey: "order.created.exchange",
+        routingKey: "order.created",
+      },
+    ],
+  },
+  {
+    queueName: "order.deleted",
+    bindings: [
+      {
+        exchangeKey: "order.deleted.exchange",
+        routingKey: "order.deleted",
+      },
+    ],
+  },
+]
+
+const exchanges = [{ name: "order-exchange", type: "fanout" }]
+
+const declareExchanges = async () => {
+  const channel = await createChannel()
+  for (const exchange of exchanges) {
+    await channel.assertExchange(exchange.name, exchange.type, {
+      durable: true,
+    })
+    console.log(`Declared exchange: ${exchange.name}`)
+  }
+}
+
+async function declareQueuesAndBindingToExchanges() {
+  queues?.forEach(async (queue) => {
+    await createQueue(queue.queueName)
+
+    queue?.bindings?.forEach(async (binding) => {
+      await bindQueueToExchange(
+        queue.queueName,
+        binding.exchangeKey,
+        binding.routingKey
+      )
+    })
+  })
+}
+
 async function initRabbitMq() {
-  await createQueue("order.created")
-  await createQueue("order.deleted")
+  await declareExchanges()
+  await declareQueuesAndBindingToExchanges()
 
-  await bindQueueToExchange(
-    "order.created",
-    "order.created.exchange",
-    "order.created"
-  )
-  await bindQueueToExchange(
-    "order.deleted",
-    "order.deleted.exchange",
-    "order.deleted"
-  )
+  await consumeMessages("order.created", (message) => {
+    console.log("Received message:", message)
+    // Do something with the message here
+  })
 
-  // await consumeMessages("order.created", (message) => {
-  //   console.log("Received message:", message)
-  //   // Do something with the message here
-  // })
+  await consumeMessages("order.deleted", (message) => {
+    console.log("Received message: deleted message", message)
+    // Do something with the message here
+  })
 }
 
 export {
@@ -164,4 +205,6 @@ export {
   consumeMessages,
   initRabbitMq,
   publishMessageWithExchange,
+  declareExchanges,
+  declareQueuesAndBindingToExchanges,
 }
